@@ -12,7 +12,7 @@ Generate a JMeter response times scatter plot
 
 node() {
     //...
-    jmeterPlot(inputs: '**/jmeter.csv', output: 'ResponseTimes.html')
+    jmeterPlot(inputs: '**/jmeter.csv', output: 'ResponseTimes.html', hover: 'AccountNo')
     //...
 }
 ```
