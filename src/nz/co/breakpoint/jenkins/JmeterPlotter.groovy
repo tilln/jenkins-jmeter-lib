@@ -19,7 +19,7 @@ class JmeterPlotter implements Serializable {
                                     var timestamp = rows[i]['timeStamp'].trim();
                                     if (timestamp.match(/^[0-9]+\$/)) timestamp = new Date(parseInt(timestamp));
                                     traces[label] = traces[label] || (isScatter ?
-                                        { x: [], y: [], text: [], type: 'scatter', mode: 'markers', name: label } :
+                                        { x: [], y: [], text: [], type: 'scatter', mode: 'markers', 'hoverinfo': 'x+text', name: label } :
                                         { x: [], y: [], text: [], type: 'line', name: label });
                                     traces[label].x.push(timestamp);
                                     traces[label].y.push(value);
