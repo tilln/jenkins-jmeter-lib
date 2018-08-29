@@ -36,7 +36,7 @@ class JmeterPlotter implements Serializable {
                                         var label = rows[i]['label'];
                                         timeslots[label] = timeslots[label] || {};
                                         var timestamp = rows[i]['timeStamp'].trim();
-                                        if (timestamp.match(/^[0-9]+$/)) timestamp = parseInt(timestamp);
+                                        if (timestamp.match(/^[0-9]+\$/)) timestamp = parseInt(timestamp);
                                         var slot = Math.trunc(new Date(timestamp).valueOf()/millis)*millis;
                                         // fill gaps with zeros, i.e. slots where there are no transactions:
                                         for (var t = max+millis; t < slot; t += millis) { timeslots[label][t] = 0; }
@@ -55,7 +55,7 @@ class JmeterPlotter implements Serializable {
                                         var label = rows[i]['label'];
                                         var value = (type != 'monitor') ? rows[i]['elapsed'] : rows[i]['responseMessage'];
                                         var timestamp = rows[i]['timeStamp'].trim();
-                                        if (timestamp.match(/^[0-9]+$/)) timestamp = new Date(parseInt(timestamp));
+                                        if (timestamp.match(/^[0-9]+\$/)) timestamp = new Date(parseInt(timestamp));
                                         traces[label] = traces[label] || (type == 'scatter' ?
                                             { x: [], y: [], text: [], type: 'scatter', mode: 'markers', 'hoverinfo': 'x+text', name: label } :
                                             { x: [], y: [], text: [], type: 'line', name: label });
