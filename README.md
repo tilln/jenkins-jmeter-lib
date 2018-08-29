@@ -22,7 +22,7 @@ node() {
 Parameters:
 - inputs: Ant-style Glob pattern defining input CSV files to load. Those need to be present in the Workspace or html archive. (default: **/*.csv)
 - output: Name of html file to generate in the Workspace. (default: index.html)
-- type: Two types are currently supported, scatter and monitor. (default: scatter)
+- type: The following types are currently supported: `scatter`, `monitor`, `tps`, `tpm`, `tph`. (default: scatter)
 - hover: Additional text to display when hovering over data points. Useful for analysing outliers. (default: '')
 
 Limitations:
