@@ -34,6 +34,8 @@ class StaticJmeterPlotter implements Serializable {
         yaxismax:   2000,
         width:      1200,
         height:     600,
+        include:    null,
+        exclude:    null,
     ]
 
     @NonCPS
@@ -41,7 +43,10 @@ class StaticJmeterPlotter implements Serializable {
         def cfg = parameters.withDefault { defaults[it] }
 
         def data = inputs.collectMany { csv ->
-            parseCsv(new FileReader("$path/$csv")).collect { row ->
+            parseCsv(new FileReader("$path/$csv")).findAll { row ->
+                (!cfg.include || row.label =~ cfg.include) && 
+                (!cfg.exclude || !(row.label =~ cfg.exclude))
+            }.collect { row ->
                 [timeStamp: row.timeStamp ==~ /\d\d\d\d-\d\d-\d\d \d\d:\d\d:\d\d\.\d+/ ? new Date().parse(DTFORMAT, row.timeStamp) : new Date(row.timeStamp.toLong()), 
                 elapsed:    row.elapsed.toLong(), 
                 label:      row.label,
@@ -139,6 +144,8 @@ class StaticJmeterPlotter implements Serializable {
             w longOpt: 'width',      args: 1, argName: 'integer', "Width of the generated images (default = ${defaults.width})"
             y longOpt: 'yaxismax',   args: 1, argName: 'milliseconds', "Maximum response times (default = ${defaults.yaxismax})"
             _ longOpt: 'yaxismin',   args: 1, argName: 'milliseconds', "Minimum response times (default = ${defaults.yaxismin})"
+            i longOpt: 'include',    args: 1, argName: 'regex',   "Include only matching labels (default = include all)"
+            e longOpt: 'exclude',    args: 1, argName: 'regex',   "Exclude matching labels (default = exclude none)"
         }
         def options = cli.parse(args)
         if (options.'?' || !options.arguments()) {
