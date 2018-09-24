@@ -27,8 +27,18 @@ class StaticJmeterPlotter implements Serializable {
     static def DTFORMAT = 'yyyy-MM-dd HH:mm:ss.SSS'
     static def TPMINTERVAL = 60000 // 1 minute
 
+    static def defaults = [
+        percentile: 90,
+        markersize: 3,
+        yaxismin:   0,
+        yaxismax:   2000,
+        width:      1200,
+        height:     600,
+    ]
+
     @NonCPS
     static def generateHtml(path, inputs, parameters) {
+        def cfg = parameters.withDefault { defaults[it] }
 
         def data = inputs.collectMany { csv ->
             parseCsv(new FileReader("$path/$csv")).collect { row ->
@@ -44,7 +54,7 @@ class StaticJmeterPlotter implements Serializable {
         def endTime = ((data.timeStamp*.getTime().max()+TPMINTERVAL)/TPMINTERVAL).toLong()
         def timeRange = (0..<(endTime-startTime)).collectEntries { [((startTime+it)*TPMINTERVAL): 0] } // empty histogram for TPM calculations
 
-        def charts =  new org.knowm.xchart.XYChartBuilder().width(1200).height(600).with { [
+        def charts =  new org.knowm.xchart.XYChartBuilder().width(cfg.width).height(cfg.height).with { [
             responsetimes : title("Response Times")           .xAxisTitle("Time")      .yAxisTitle("Milliseconds")           .build(),
             percentiles   : title("Percentile Response Times").xAxisTitle("Percentile").yAxisTitle("Milliseconds")           .build(),
             throughput    : title("Throughput")               .xAxisTitle("Time")      .yAxisTitle("Transactions per Minute").build(),
@@ -58,12 +68,14 @@ class StaticJmeterPlotter implements Serializable {
 
         charts.responsetimes.styler
             .setDefaultSeriesRenderStyle(Scatter)
-            .setMarkerSize(parameters.markersize ?: 3)
-            .setYAxisMax(parameters.yaxismax ?: 2000)
+            .setMarkerSize(cfg.markersize)
+            .setYAxisMin(cfg.yaxismin)
+            .setYAxisMax(cfg.yaxismax)
 
         charts.percentiles.styler
             .setDefaultSeriesRenderStyle(Line)
-            .setYAxisMax(parameters.yaxismax ?: 2000)
+            .setYAxisMin(cfg.yaxismin)
+            .setYAxisMax(cfg.yaxismax)
 
         charts.throughput.styler
             .setDefaultSeriesRenderStyle(Line)
@@ -85,7 +97,7 @@ class StaticJmeterPlotter implements Serializable {
             charts.throughput.addSeries(label, transactions.t, transactions.tpm)
             
             aggregates.averages[label] = elapsed.with{sum()/size()}
-            aggregates.percentiles[label] = percentiles[parameters.percentile ?: 90]
+            aggregates.percentiles[label] = percentiles[cfg.percentile]
             aggregates.transactions[label] = transactions.tpm.sum()
         }
 
@@ -104,7 +116,7 @@ class StaticJmeterPlotter implements Serializable {
                     td { img(src: "data:image/png;base64,${getBitmapBytes(charts.percentiles, PNG).encodeBase64()}") }
                     td {
                         table { 
-                            tr { th("Request"); th("${parameters.percentile ?: 90}th Percentile Response Times (milliseconds)") }
+                            tr { th("Request"); th("${cfg.percentile}th Percentile Response Times (milliseconds)") }
                             aggregates.percentiles.collect { label, value -> tr { td(label); td(value) } }
                 }    }    }
                 tr {
@@ -119,26 +131,22 @@ class StaticJmeterPlotter implements Serializable {
     
     static def main(args) {
         def cli = new CliBuilder(usage: "${this.simpleName}.groovy [options] <files>")
-        def defaults = [
-            percentile: 90,
-            markersize: 3,
-            yaxismax:   2000,
-        ]
         cli.with {
             h longOpt: 'help', 'Show usage information'
             p longOpt: 'percentile', args: 1, argName: 'integer', "Percentile to print (default = ${defaults.percentile})"
             m longOpt: 'markersize', args: 1, argName: 'integer', "Size of the scatter chart markers (default = ${defaults.markersize})"
-            y longOpt: 'yaxismax',   args: 1, argName: 'milliseconds', "Y axis limit, i.e. maximum response times (default = ${defaults.yaxismax})"
+            h longOpt: 'height',     args: 1, argName: 'integer', "Height of the generated images (default = ${defaults.height})"
+            w longOpt: 'width',      args: 1, argName: 'integer', "Width of the generated images (default = ${defaults.width})"
+            y longOpt: 'yaxismax',   args: 1, argName: 'milliseconds', "Maximum response times (default = ${defaults.yaxismax})"
+            _ longOpt: 'yaxismin',   args: 1, argName: 'milliseconds', "Minimum response times (default = ${defaults.yaxismin})"
         }
         def options = cli.parse(args)
-        if (options.h) {
+        if (options.h || !options.arguments()) {
             cli.usage()
         } else {
-            println generateHtml('.', options.arguments(), [
-                percentile: options.p ? options.p.toInteger() : defaults.percentile, 
-                markersize: options.m ? options.m.toInteger() : defaults.markersize, 
-                yaxismax:   options.y ? options.y.toInteger() : defaults.yaxismax, 
-            ])
+            def cfg = defaults.collectEntries { key, value -> [(key): options[key] ? options[key].isNumber() ? options[key].toInteger() : options[key] : value ] }
+
+            println generateHtml('', options.arguments(), cfg)
         }
     }
 }
