@@ -132,7 +132,7 @@ class StaticJmeterPlotter implements Serializable {
     static def main(args) {
         def cli = new CliBuilder(usage: "${this.simpleName}.groovy [options] <files>")
         cli.with {
-            h longOpt: 'help', 'Show usage information'
+            '?' longOpt: 'help', 'Show usage information'
             p longOpt: 'percentile', args: 1, argName: 'integer', "Percentile to print (default = ${defaults.percentile})"
             m longOpt: 'markersize', args: 1, argName: 'integer', "Size of the scatter chart markers (default = ${defaults.markersize})"
             h longOpt: 'height',     args: 1, argName: 'integer', "Height of the generated images (default = ${defaults.height})"
@@ -141,11 +141,16 @@ class StaticJmeterPlotter implements Serializable {
             _ longOpt: 'yaxismin',   args: 1, argName: 'milliseconds', "Minimum response times (default = ${defaults.yaxismin})"
         }
         def options = cli.parse(args)
-        if (options.h || !options.arguments()) {
+        if (options.'?' || !options.arguments()) {
             cli.usage()
         } else {
-            def cfg = defaults.collectEntries { key, value -> [(key): options[key] ? options[key].isNumber() ? options[key].toInteger() : options[key] : value ] }
-
+            def cfg = defaults.collectEntries { key, value -> 
+                [(key): options[key]
+                    ? value instanceof Number 
+                        ? options[key].toInteger() : options[key] 
+                    : value 
+                ]
+            }
             println generateHtml('', options.arguments(), cfg)
         }
     }
