@@ -28,10 +28,10 @@ class StaticJmeterPlotter implements Serializable {
     static def TPMINTERVAL = 60000 // 1 minute
 
     @NonCPS
-    static def generateHtml(inputs, parameters) {
+    static def generateHtml(path, inputs, parameters) {
 
         def data = inputs.collectMany { csv ->
-            parseCsv(new FileReader("$csv")).collect { row ->
+            parseCsv(new FileReader("$path/$csv")).collect { row ->
                 [timeStamp: row.timeStamp ==~ /\d\d\d\d-\d\d-\d\d \d\d:\d\d:\d\d\.\d+/ ? new Date().parse(DTFORMAT, row.timeStamp) : new Date(row.timeStamp.toLong()), 
                 elapsed:    row.elapsed.toLong(), 
                 label:      row.label,
@@ -134,7 +134,7 @@ class StaticJmeterPlotter implements Serializable {
         if (options.h) {
             cli.usage()
         } else {
-            println generateHtml(options.arguments(), [
+            println generateHtml('.', options.arguments(), [
                 percentile: options.p ? options.p.toInteger() : defaults.percentile, 
                 markersize: options.m ? options.m.toInteger() : defaults.markersize, 
                 yaxismax:   options.y ? options.y.toInteger() : defaults.yaxismax, 
