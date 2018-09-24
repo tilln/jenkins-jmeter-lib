@@ -1,4 +1,5 @@
 import nz.co.breakpoint.jenkins.JmeterPlotter
+import nz.co.breakpoint.jenkins.StaticJmeterPlotter
 
 def call(parameters = [:]) {
     def inputs = findFiles(glob: parameters.inputs ?: '**/*.csv')
