@@ -31,7 +31,7 @@ class StaticJmeterPlotter implements Serializable {
     static def generateHtml(inputs, parameters) {
 
         def data = inputs.collectMany { csv ->
-            parseCsv(new FileReader(csv)).collect { row ->
+            parseCsv(new FileReader("$csv")).collect { row ->
                 [timeStamp: row.timeStamp ==~ /\d\d\d\d-\d\d-\d\d \d\d:\d\d:\d\d\.\d+/ ? new Date().parse(DTFORMAT, row.timeStamp) : new Date(row.timeStamp.toLong()), 
                 elapsed:    row.elapsed.toLong(), 
                 label:      row.label,
