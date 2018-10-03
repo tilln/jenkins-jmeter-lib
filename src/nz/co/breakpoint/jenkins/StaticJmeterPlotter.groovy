@@ -26,16 +26,20 @@ class StaticJmeterPlotter implements Serializable {
 
     static def DTFORMAT = 'yyyy-MM-dd HH:mm:ss.SSS'
     static def TPMINTERVAL = 60000 // 1 minute
+    static def FAILURESUFFIX = '-failure'
 
     static def defaults = [
-        percentile: 90,
-        markersize: 3,
-        yaxismin:   0,
-        yaxismax:   2000,
-        width:      1200,
-        height:     600,
-        include:    null,
-        exclude:    null,
+        percentile:         90,
+        markersize:         3,
+        yaxismin:           0,
+        yaxismax:           2000,
+        width:              1200,
+        height:             600,
+        include:            null,
+        exclude:            null,
+        'exclude-failure':  false,
+        'exclude-success':  false,
+        'split-by-success': false,
     ]
 
     @NonCPS
@@ -45,12 +49,15 @@ class StaticJmeterPlotter implements Serializable {
         def data = inputs.collectMany { csv ->
             parseCsv(new FileReader("$path/$csv")).findAll { row ->
                 (!cfg.include || row.label =~ cfg.include) && 
-                (!cfg.exclude || !(row.label =~ cfg.exclude))
+                (!cfg.exclude || !(row.label =~ cfg.exclude)) &&
+                (!cfg.'exclude-failure' || row.success == 'true') &&
+                (!cfg.'exclude-success' || row.success == 'false')
             }.collect { row ->
-                [timeStamp: row.timeStamp ==~ /\d\d\d\d-\d\d-\d\d \d\d:\d\d:\d\d\.\d+/ ? new Date().parse(DTFORMAT, row.timeStamp) : new Date(row.timeStamp.toLong()), 
+                [
+                timeStamp: row.timeStamp ==~ /\d\d\d\d-\d\d-\d\d \d\d:\d\d:\d\d\.\d+/ ? new Date().parse(DTFORMAT, row.timeStamp) : new Date(row.timeStamp.toLong()),
                 elapsed:    row.elapsed.toLong(), 
-                label:      row.label,
-                success:    row.success]
+                label:      row.label + (cfg.'split-by-success' && row.success == 'false' ? FAILURESUFFIX : ''),
+                ]
         }   }
 
         if (!data) throw new RuntimeException('No input data')
@@ -136,6 +143,7 @@ class StaticJmeterPlotter implements Serializable {
     
     static def main(args) {
         def cli = new CliBuilder(usage: "${this.simpleName}.groovy [options] <files>")
+        cli.width = 100
         cli.with {
             '?' longOpt: 'help', 'Show usage information'
             p longOpt: 'percentile', args: 1, argName: 'integer', "Percentile to print (default = ${defaults.percentile})"
@@ -146,6 +154,9 @@ class StaticJmeterPlotter implements Serializable {
             _ longOpt: 'yaxismin',   args: 1, argName: 'milliseconds', "Minimum response times (default = ${defaults.yaxismin})"
             i longOpt: 'include',    args: 1, argName: 'regex',   "Include only matching labels (default = include all)"
             e longOpt: 'exclude',    args: 1, argName: 'regex',   "Exclude matching labels (default = exclude none)"
+            _ longOpt: 'exclude-failure',     args: 0,            "Exclude failed requests, i.e. plot successes only"
+            _ longOpt: 'exclude-success',     args: 0,            "Exclude successful requests, i.e. plot failures only"
+            _ longOpt: 'split-by-success',    args: 0,            "Plot successful and failed requests separately"
         }
         def options = cli.parse(args)
         if (options.'?' || !options.arguments()) {
