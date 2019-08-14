@@ -15,7 +15,7 @@ node() {
     jmeterPlot(inputs: '**/jmeter.csv', output: 'ResponseTimes.html', hover: 'AccountNo')
     
     // Useful in conjunction with HTML Publisher:
-    publishHTML reportFiles: 'ResponseTimes.html', reportDir: '.' // archive the entire folder incl. CSV files
+    publishHTML reportName: 'JMeter Report', reportFiles: 'ResponseTimes.html', reportDir: '.' // archive the entire folder incl. CSV files
 }
 ```
 
